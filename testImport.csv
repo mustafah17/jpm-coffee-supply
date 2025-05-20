@@ -1,0 +1,5 @@
+name,category,stock,reorderLevel,supplierName,supplierContact
+Espresso,COFFEE_BEANS,100,20,Acme Supplier,123-4567
+Latte,MILK,200,30,Dairy Co,987-6543
+Sugar,SUGAR,150,15,Sweet Supplier,555-7890
+Cup,CUPS,500,50,Cup Supplier,111-2222

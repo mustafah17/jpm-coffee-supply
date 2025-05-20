@@ -5,8 +5,8 @@ import { useEffect, useState, ChangeEvent } from 'react';
 type ItemCategory = 'COFFEE_BEANS' | 'MILK' | 'SUGAR' | 'CUPS';
 
 type Supplier = {
-  name: "";
-  contact: "";
+  name: string;
+  contact: string;
 };
 
 type SupplyItem = {
@@ -23,6 +23,8 @@ export default function SupplyItemsPage() {
   const [form, setForm] = useState<Partial<SupplyItem>>({
     supplier: { name: '', contact: '' },
   });
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editingForm, setEditingForm] = useState<Partial<SupplyItem>>({});
   const [searchParams, setSearchParams] = useState<Record<string, string>>({});
   const [file, setFile] = useState<File | null>(null);
 
@@ -48,15 +50,15 @@ export default function SupplyItemsPage() {
     setItems([...items, newItem]);
   };
 
-  const updateItem = async (id?: number) => {
-    if (!id) return;
+  const updateItem = async (id: number) => {
     const res = await fetch(`${API_BASE}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(editingForm),
     });
     const updated = await res.json();
     setItems(items.map(i => i.itemID === id ? updated : i));
+    setEditingItemId(null);
   };
 
   const deleteItem = async (id: number) => {
@@ -108,7 +110,7 @@ export default function SupplyItemsPage() {
   const handleSupplierChange = (field: keyof Supplier, value: string) => {
     setForm({
       ...form,
-      supplier: { ...form.supplier, [field]: value ?? ""},
+      supplier: { ...form.supplier, [field]: value ?? "" },
     });
   };
 
@@ -116,18 +118,13 @@ export default function SupplyItemsPage() {
     setSearchParams({ ...searchParams, [field]: value });
   };
 
-  console.log("Rendering items:");
-  items.forEach((item, index) => {
-    console.log(`Index ${index} - itemID:`, item.itemID);
-  });
-  
   return (
     <div>
       <h1>Supply Items</h1>
 
-      {/* Create / Update Form */}
+      {/* Create Form */}
       <section>
-        <h2>Create or Update Item</h2>
+        <h2>Create Item</h2>
         <input placeholder="Name" onChange={e => handleFormChange('name', e.target.value)} value={form.name || ''} />
         <select onChange={e => handleFormChange('category', e.target.value as ItemCategory)} value={form.category || ''}>
           <option value="">Select Category</option>
@@ -141,7 +138,6 @@ export default function SupplyItemsPage() {
         <input placeholder="Supplier Name" onChange={e => handleSupplierChange('name', e.target.value)} value={form.supplier?.name || ''} />
         <input placeholder="Supplier Contact" onChange={e => handleSupplierChange('contact', e.target.value)} value={form.supplier?.contact || ''} />
         <button onClick={createItem}>Create</button>
-        <button onClick={() => updateItem(form.itemID)}>Update by ID</button>
       </section>
 
       {/* Search */}
@@ -177,16 +173,40 @@ export default function SupplyItemsPage() {
       <section>
         <h2>All Items</h2>
         {items.map(item => (
-          <div key={item.itemID} style={{ border: '1px solid black', padding: '5px', margin: '5px' }}>
-            <p>ID: {item.itemID}</p>
-            <p>Name: {item.name}</p>
-            <p>Category: {item.category}</p>
-            <p>Stock: {item.stock}</p>
-            <p>Reorder Level: {item.reorderLevel}</p>
-            <p>Supplier: {item.supplier.name} ({item.supplier.contact})</p>
-            <button onClick={() => deleteItem(item.itemID!)}>Delete</button>
-            <button onClick={() => updateQuantity(item.itemID!)}>Update Quantity</button>
-            <button onClick={() => setForm(item)}>Edit</button>
+          <div key={item.itemID ?? Math.random()} style={{ border: '1px solid black', padding: '5px', margin: '5px' }}>
+            {editingItemId === item.itemID ? (
+              <>
+                <input value={editingForm.name || ''} onChange={e => setEditingForm({ ...editingForm, name: e.target.value })} />
+                <select value={editingForm.category || ''} onChange={e => setEditingForm({ ...editingForm, category: e.target.value as ItemCategory })}>
+                  <option value="">Select Category</option>
+                  <option value="COFFEE_BEANS">COFFEE_BEANS</option>
+                  <option value="MILK">MILK</option>
+                  <option value="SUGAR">SUGAR</option>
+                  <option value="CUPS">CUPS</option>
+                </select>
+                <input type="number" value={editingForm.stock || ''} onChange={e => setEditingForm({ ...editingForm, stock: Number(e.target.value) })} />
+                <input type="number" value={editingForm.reorderLevel || ''} onChange={e => setEditingForm({ ...editingForm, reorderLevel: Number(e.target.value) })} />
+                <input value={editingForm.supplier?.name || ''} onChange={e => setEditingForm({ ...editingForm, supplier: { ...editingForm.supplier, name: e.target.value } })} />
+                <input value={editingForm.supplier?.contact || ''} onChange={e => setEditingForm({ ...editingForm, supplier: { ...editingForm.supplier, contact: e.target.value } })} />
+                <button onClick={() => updateItem(item.itemID!)}>Save</button>
+                <button onClick={() => setEditingItemId(null)}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <p>ID: {item.itemID}</p>
+                <p>Name: {item.name}</p>
+                <p>Category: {item.category}</p>
+                <p>Stock: {item.stock}</p>
+                <p>Reorder Level: {item.reorderLevel}</p>
+                <p>Supplier: {item.supplier.name} ({item.supplier.contact})</p>
+                <button onClick={() => deleteItem(item.itemID!)}>Delete</button>
+                <button onClick={() => updateQuantity(item.itemID!)}>Update Quantity</button>
+                <button onClick={() => {
+                  setEditingItemId(item.itemID!);
+                  setEditingForm(item);
+                }}>Edit</button>
+              </>
+            )}
           </div>
         ))}
       </section>
